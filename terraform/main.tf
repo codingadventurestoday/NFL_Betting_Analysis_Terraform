@@ -1,7 +1,6 @@
 //To Do:
-// 1. Walk through startup.sh file (ensure disk is set up to MySQL image)
-// 2. pull repo to images 
-// 3. create chron jobs for daily data scrapping
+// 1. pull repo to images 
+// 2. create chron jobs for daily data scrapping
 
 terraform {
   required_providers {
@@ -14,9 +13,22 @@ terraform {
 
 provider "google" {
   credentials = file(var.gcp_svc_key)
-  project = var.gcp_project //should I use the id instead of the name
+  project = var.gcp_project
   region  = var.region
   zone    = var.zone
+}
+
+provider "vault" {
+  address = "http://127.0.0.1:8200"
+  token = var.vault_token 
+}
+
+resource "local_file" "credentials_file" {
+  filename = "${path.module}/mysql_credentials.txt"
+  content = <<EOT
+MySQL Username:${data.vault_generic_secret.database.data["mysql_username"]}  
+MySQL Password: ${data.vault_generic_secret.database.data["mysql_password"]}
+EOT  
 }
 
 resource "google_compute_instance" "vm_compute" {

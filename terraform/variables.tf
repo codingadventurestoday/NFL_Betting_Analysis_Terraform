@@ -1,6 +1,6 @@
 variable "gcp_svc_key" {
-  description = "Path to the GCP service account key file."
-  type        = string
+  description = "the GCP service account key"
+  type = string
 }
 
 variable "gcp_project" {
@@ -24,4 +24,10 @@ variable "machine_type" {
   description = "The machine type for the VM instance."
   type        = string
   default     = "e2-micro"
+}
+
+variable "vault_token" {
+  description  = "Vault token for authenticaiton"
+  type         = string
+  sensitive    = true  
 }
