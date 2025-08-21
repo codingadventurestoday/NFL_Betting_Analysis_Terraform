@@ -15,11 +15,23 @@ sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 # Configure Docker to use the persistent disk for data storage
-sudo service docker stop
-sudo mkdir -p "$MOUNT_POINT"/docker
-sudo rsync -aqxP /var/lib/docker/ "$MOUNT_POINT"/docker/
-sudo rm -rf /var/lib/docker
-sudo ln -s "$MOUNT_POINT"/docker /var/lib/docker
+if [ ! -L /var/lib/docker ]; then
+    echo "Configuring Docker to use persistent disk for data storage..."
+
+    # Ensure Docker is stopped before moving data
+    sudo service docker stop
+
+    # Create the destination directory on the persistent disk
+    sudo mkdir -p "$MOUNT_POINT"/docker
+
+    # Rsync existing Docker data to the persistent disk. This will only run once.
+    sudo rsync -aqxP /var/lib/docker/ "$MOUNT_POINT"/docker/
+
+    # Remove the original directory and create a symbolic link
+    sudo rm -rf /var/lib/docker
+    sudo ln -s "$MOUNT_POINT"/docker /var/lib/docker
+fi
+
 sudo service docker start
 
 echo "Docker install complete. Starting to pull and run images"
