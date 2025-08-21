@@ -1,15 +1,13 @@
 #!/bin/bash
 
-# ensure the docker image for mysql has volume for persistent disk at the vm level
-# since the mysql db is running through a docker image when the vm gets shut down
-
 echo "Starting VM setup script..."
-sudo apt-get update
+sudo apt-get update -y
+sudo apt-get upgrade -y
 
 # Define the disk and mount point
 DISK_DEV="/dev/disk/by-id/google-mysql-data-disk"
 MOUNT_POINT="/mnt/mysql-data"
-
+export MOUNT_POINT
 # Check if the disk is already formatted, if not, format it with an ext4 filesystem
 if ! sudo blkid "$DISK_DEV"; then
   echo "Formatting disk..."
@@ -26,8 +24,12 @@ if ! grep -q "$MOUNT_POINT" /etc/fstab; then
   echo UUID=$(sudo blkid -s UUID -o value "$DISK_DEV") "$MOUNT_POINT" ext4 discard,defaults 0 2 | sudo tee -a /etc/fstab
 fi
 
-echo "Starting installment of Docker"
-source ./install_docker.sh
+if ! command -v docker &> /dev/null; then
+    echo "Docker is not installed. Installing Docker..."
+    source ./install_docker.sh
+else
+    echo "Docker is already installed. Skipping installation."
+fi
 
 source ./run_containers.sh
 echo "VM setup script finished successfully."
