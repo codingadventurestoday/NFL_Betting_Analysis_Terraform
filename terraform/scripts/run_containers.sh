@@ -30,7 +30,7 @@ if ! sudo docker ps -a --format '{{.Names}}' | grep -q "mysql-db"; then
     sudo docker run -d --name mysql-db \
         --network my-container-network \
         -v "$MOUNT_POINT"/mysql-data:/var/lib/mysql \
-        -e MYSQL_ROOT_PASSWORD=your_secure_password \ 
+        -e MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD} \ 
         mysql:9.4
         echo "Successfully running MySQL image"
 else

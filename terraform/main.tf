@@ -1,5 +1,4 @@
 //To Do:
-// 1. pull repo to images 
 // 2. create chron jobs for daily data scrapping
 
 terraform {
@@ -23,12 +22,8 @@ provider "vault" {
   token = var.vault_token 
 }
 
-resource "local_file" "credentials_file" {
-  filename = "${path.module}/mysql_credentials.txt"
-  content = <<EOT
-MySQL Username:${data.vault_generic_secret.database.data["mysql_username"]}  
-MySQL Password: ${data.vault_generic_secret.database.data["mysql_password"]}
-EOT  
+data "vault_generic_secret" "database_password" {
+  path = "secret/myapp/database"
 }
 
 resource "google_compute_instance" "vm_compute" {
@@ -70,7 +65,12 @@ resource "google_compute_instance" "vm_compute" {
   }
 
   metadata = {
-    startup-script = file("./scripts/startup.sh")
+    startup-script = <<-EOT
+    #!/bin/bash
+    export MYSQL_ROOT_PASSWORD="${data.vault_generic_secret.database_secrets.data["mysql_password"]}"
+  
+    ./scripts/startup.sh
+    EOT
   }
 }
 
@@ -99,12 +99,5 @@ resource "google_compute_firewall" "allow-http-ssh" {
                             // only after SSL/TLS certificatie on web server running on the vm
   }
 }
-
-# Deploying Commands 
-# terraform init
-# terrfaform refresh 
-# terraform plan
-# terraform apply 
-# terraform show 
 
 # codewithjeremy.com
