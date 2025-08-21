@@ -1,19 +1,20 @@
 //To Do:
-// 1. Walk through terraform finds
-// 2. Walk through startup.sh file
+// 1. Walk through startup.sh file (ensure disk is set up to MySQL image)
+// 2. pull repo to images 
+// 3. create chron jobs for daily data scrapping
 
 terraform {
   required_providers {
     google = {
       source = "hashicorp/google"
-      version = "6.8.0"
+      version = "6.49.0"
     }
   }
 }
 
 provider "google" {
   credentials = file(var.gcp_svc_key)
-  project = var.gcp_project
+  project = var.gcp_project //should I use the id instead of the name
   region  = var.region
   zone    = var.zone
 }
@@ -23,12 +24,16 @@ resource "google_compute_instance" "vm_compute" {
   machine_type = var.machine_type
 
   //Tags are used to apply network firewall rules to your VM
-  tags = ["http-ssh-access"]
+  tags = ["http-ssh-access"] //need to review this is correct
 
   //Labels are used for resource management, organization, and billing
+
   boot_disk {
+    mode = "READ_WRITE"
+
     initialize_params {
-      image = "debian-cloud/debian-11"
+      image = "ubuntu-os-cloud/ubuntu-2004-lts"
+      type = "pd-standard"
     }
   }
 
@@ -42,7 +47,7 @@ resource "google_compute_instance" "vm_compute" {
     network = "default"
 
     access_config {
-      nat_ip = google_compute_address.static_ip.address
+      nat_ip = google_compute_address.static_ip.address 
     }
   }
 
@@ -53,7 +58,7 @@ resource "google_compute_instance" "vm_compute" {
   }
 
   metadata = {
-    startup-script = file("startup.sh")
+    startup-script = file("./scripts/startup.sh")
   }
 }
 
@@ -78,14 +83,10 @@ resource "google_compute_firewall" "allow-http-ssh" {
 
   allow {
     protocol = "tcp"
-    ports    = ["22", "80"]
+    ports    = ["22", "80"] //replace port 80 with 443 for https access only
+                            // only after SSL/TLS certificatie on web server running on the vm
   }
 }
-
-
-
-# Provisioning Infrastructure Commands
-
 
 # Deploying Commands 
 # terraform init
