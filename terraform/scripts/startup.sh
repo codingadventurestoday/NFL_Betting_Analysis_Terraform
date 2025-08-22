@@ -32,4 +32,9 @@ else
 fi
 
 source ./run_containers.sh
+
+echo "Going through Cron Jobs"
+
+source ./cron_job.sh
+
 echo "VM setup script finished successfully."

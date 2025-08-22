@@ -13,7 +13,7 @@ sudo mkdir -p "$MOUNT_POINT"/nginx-data
 
 if [ ! -d "$MOUNT_POINT"/app-code/.git ]; then
     echo "Cloning Git repository..."
-    sudo git clone https://github.com/codingadventurestoday/NFL_Betting_Analysis_Terraform.git "$MOUNT_POINT"/app-code
+    sudo git clone https://github.com/codingadventurestoday/NFL_Betting_Analysis.git "$MOUNT_POINT"/app-code
 else
     echo "Git repository already exists. Skipping clone."
 fi
