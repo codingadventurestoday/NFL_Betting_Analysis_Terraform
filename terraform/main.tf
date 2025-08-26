@@ -1,6 +1,3 @@
-//To Do:
-// 2. create chron jobs for daily data scrapping
-
 terraform {
   required_providers {
     google = {
@@ -22,7 +19,7 @@ provider "vault" {
   token = var.vault_token 
 }
 
-data "vault_generic_secret" "database_password" {
+data "vault_generic_secret" "database_secrets" {
   path = "secret/myapp/database"
 }
 
@@ -39,7 +36,7 @@ resource "google_compute_instance" "vm_compute" {
     mode = "READ_WRITE"
 
     initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-2004-lts"
+      image = "debian-cloud/debian-11"
       type = "pd-standard"
     }
   }
@@ -47,7 +44,7 @@ resource "google_compute_instance" "vm_compute" {
   scheduling {
     automatic_restart   = true
     provisioning_model  = "SPOT"
-    on_host_maintenance = "MIGRATE"
+    on_host_maintenance = "TERMINATE"
   }
 
   network_interface {
@@ -67,8 +64,10 @@ resource "google_compute_instance" "vm_compute" {
   metadata = {
     startup-script = <<-EOT
     #!/bin/bash
-    export MYSQL_ROOT_PASSWORD="${data.vault_generic_secret.database_secrets.data["mysql_password"]}"
-  
+    export MYSQL_ROOT_PASSWORD='${data.vault_generic_secret.database_secrets.data["mysql_password"]}'
+    export VAULT_PATH='${data.vault_generic_secret.database_secrets.data["vault_path"]}' | sudo tee -a /etc/profile.d/vault_secrets.sh
+    . /etc/profile.d/vault_path.sh
+    
     ./scripts/startup.sh
     EOT
   }
@@ -97,6 +96,39 @@ resource "google_compute_firewall" "allow-http-ssh" {
     protocol = "tcp"
     ports    = ["22", "80"] //replace port 80 with 443 for https access only
                             // only after SSL/TLS certificatie on web server running on the vm
+  }
+}
+
+resource "google_monitoring_alert_policy" "vm_shutdown_alert" {
+  display_name = "VM Instance Shutdown Alert"
+  combiner     = "OR"
+  project      = var.gcp_project
+
+  conditions {
+    display_name = "VM is terminated"
+    condition_matched_log {
+      filter = <<EOT
+      resource.type="gce_instance"
+      jsonPayload.event.action="gcp.compute.v1.instance.terminate"
+      EOT
+    }
+  }
+
+  documentation {
+    content   = "An alert has been triggered because a GCE VM instance was terminated."
+    mime_type = "text/markdown"
+  }
+
+  notification_channels = [
+    google_monitoring_notification_channel.email_channel.id,
+  ]
+}
+
+resource "google_monitoring_notification_channel" "email_channel" {
+  display_name = "Email Notification Channel"
+  type         = "email"
+  labels = {
+    email_address = "codingadventurestoday@gamil.com"
   }
 }
 
