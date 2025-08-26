@@ -1,8 +1,3 @@
-variable "gcp_svc_key" {
-  description = "the GCP service account key"
-  type = string
-}
-
 variable "gcp_project" {
   description = "The GCP project ID to deploy resources into."
   type        = string
